@@ -12,7 +12,8 @@ class BP_CVE_Notion:
         notion_api = os.environ.get("NOTION_TOKEN")
         self.client = Client(auth=notion_api)
         self.databaseId = os.environ.get("DATABASE_ID")
-        self.bp_notion = None
+        self.notion_data = None
+        self.local_data = None
         
     def get_notion_db(self):
         bp_cve = self.client.databases.query(
@@ -62,11 +63,17 @@ class BP_CVE_Notion:
         df = df[['id', 'properties']]
         df['Name'] = df['properties'].apply(lambda x: x['이름']['title'][0]['plain_text'])
         df['Status'] = df['properties'].apply(lambda x: x['상태']['status']['name'])
+        df['StartDate'] = df['properties'].apply(lambda x: x['날짜']['date']['start'])
+        df['EndDate'] = df['properties'].apply(lambda x: x['날짜']['date']['end'])
         
-        df = df.sort_values('Name').reset_index(drop=True)[['Name', 'id', 'Status','properties']]
+        df = df.sort_values('Name').reset_index(drop=True)[['Name', 'id', 'Status','StartDate', 'EndDate']]
         print(df)
-        self.bp_notion = df.copy()
+        self.notion_data = df.copy()
         return
+        
+    def compare_notion(self):
+        if self.local_data == None:
+            pass
         
 
 
