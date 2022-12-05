@@ -11,7 +11,7 @@ class BP_CVE_Notion:
         load_dotenv()
         notion_api = os.environ.get("NOTION_TOKEN")
         self.client = Client(auth=notion_api)
-        self.databaseId = "713b9979df664d04aab68814db13fb2b"
+        self.databaseId = os.environ.get("DATABASE_ID")
         self.bp_notion = None
         
     def get_notion_db(self):
