@@ -61,7 +61,9 @@ class BP_CVE_Notion:
         df = pd.DataFrame(bp_cve['results'])
         df = df[['id', 'properties']]
         df['Name'] = df['properties'].apply(lambda x: x['이름']['title'][0]['plain_text'])
-        df = df.sort_values('Name').reset_index(drop=True)[['Name', 'id', 'properties']]
+        df['Status'] = df['properties'].apply(lambda x: x['상태']['status']['name'])
+        
+        df = df.sort_values('Name').reset_index(drop=True)[['Name', 'id', 'Status','properties']]
         print(df)
         self.bp_notion = df.copy()
         return
