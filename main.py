@@ -17,48 +17,77 @@ class BP_CVE_Notion:
         
     def get_notion_db(self):
         bp_cve = self.client.databases.query(
-            **{
-                "database_id":self.databaseId,
-                "filter":{
-                    "or":[
-                        {
-                            "property": "상태",
-                            "status":{
-                                "equals" : "Done"
+                **{
+                    "database_id":self.databaseId,
+                    "filter":{
+                        "or":[
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Done"
+                                }
+                            },
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Checking"
+                                }
+                            },
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Not Regex"
+                                }
+                            },
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Updated"
+                                }
                             }
-                        },
-                        {
-                            "property": "상태",
-                            "status":{
-                                "equals" : "Checking"
-                            }
-                        },
-                        {
-                            "property": "상태",
-                            "status":{
-                                "equals" : "Not Regex"
-                            }
-                        },
-                        {
-                            "property": "상태",
-                            "status":{
-                                "equals" : "Updated"
-                            }
-                        }
-                    ] 
-                },
-                "sorts": [
-                    {
-                        "property":"날짜",
-                        "direction":"ascending"
-                    },
-                    {
-                        "property":"이름",
-                        "direction":"ascending"
+                        ] 
                     }
-                ]
-            }
+                }
         )
+        while bp_cve['has_more']:
+            next_data = self.client.databases.query(
+                **{
+                    "database_id":self.databaseId,
+                    "filter":{
+                        "or":[
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Done"
+                                }
+                            },
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Checking"
+                                }
+                            },
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Not Regex"
+                                }
+                            },
+                            {
+                                "property": "상태",
+                                "status":{
+                                    "equals" : "Updated"
+                                }
+                            }
+                        ] 
+                    },
+                    "start_cursor":bp_cve['next_cursor']
+                }
+            )
+            bp_cve['results'].extend(next_data['results'])
+            bp_cve['has_more'] = next_data['has_more']
+            bp_cve['next_cursor'] = next_data['next_cursor']
+
         df = pd.DataFrame(bp_cve['results'])
         df = df[['id', 'properties']]
         df['Name'] = df['properties'].apply(lambda x: x['이름']['title'][0]['plain_text'])
