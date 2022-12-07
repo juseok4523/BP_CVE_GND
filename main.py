@@ -107,13 +107,18 @@ class BP_CVE_Notion:
     def compare_notion(self):
         if self.local_data is not None:
             if not self.local_data.equals(self.notion_data):
+                print('Update Local Data')
                 merge_df = pd.merge(self.notion_data, self.local_data, how='outer', on=['Name','id'])
                 compare_df = merge_df[merge_df['Status_x'] != merge_df['Status_y']]
                 compare_df = compare_df[['Name','id', 'Status_x', 'StartDate_x', 'EndDate_x']].rename(columns={'Status_x':'Status', 'StartDate_x':'StartDate', 'EndDate_x':'EndDate'}).dropna(axis=0)
                 if compare_df is not None:
                     self.local_data = pd.concat([self.local_data, compare_df], axis=0, join='outer')
                     self.compare_df = compare_df.copy()
+                print(compare_df)
+            else :
+                print('Not Update Local Data')
         else:
+            print('Init Local Data')
             self.compare_df = self.notion_data.copy()
             self.local_data = self.notion_data.copy()
         return
