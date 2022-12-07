@@ -1,12 +1,9 @@
 from notion_client import Client
 from notion2md.exporter.block import MarkdownExporter, StringExporter
 from dotenv import load_dotenv
-import json
 import pandas as pd
-import numpy as np
 import os
-from notion2md.exporter.block import MarkdownExporter, StringExporter
-import multiprocessing as mp
+from mdutils.mdutils import MdUtils
 
 class BP_CVE_Notion:
     def __init__(self):
