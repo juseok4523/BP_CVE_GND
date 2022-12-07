@@ -127,10 +127,47 @@ class BP_CVE_Notion:
         self.local_data.to_csv(path+filename)
         return
         
-    def change_notion_md(self, n_cores=8):
+    def change_notion_md(self):
+        print('Write Notion with Md...')
         temp_df = self.compare_df.copy()
         temp_df.apply(lambda row: MarkdownExporter(block_id=row['id'], output_path=self.save_dir, output_filename=row['Name'], unzipped=True, download=True).export(), axis=1)
         return
+
+    def update_result(self):
+        print('Update Result Board...')
+        mdfile = MdUtils(file_name='BP-CVE-Data/BP-CVE_Result')
+        #karban-plugin
+        mdfile.write("---\n\nkanban-plugin: basic\n\n---\n")
+        
+        #Done
+        mdfile.write('\n## Done\n')
+        done_df = self.local_data[self.local_data['Status'] == 'Done'].copy()
+        done_df['Md_Name'] = done_df['Name'].apply(lambda x: f'[[{x}]]')
+        mdfile.new_checkbox_list(done_df['Md_Name'])
+        
+        #Checking
+        mdfile.write('\n## Checking\n')
+        check_df = self.local_data[self.local_data['Status'] == 'Checking'].copy()
+        check_df['Md_Name'] = check_df['Name'].apply(lambda x: f'[[{x}]]')
+        mdfile.new_checkbox_list(check_df['Md_Name'])
+        
+        #Not Regex
+        mdfile.write('\n## Not Regex\n')
+        not_df = self.local_data[self.local_data['Status'] == 'Not Regex'].copy()
+        not_df['Md_Name'] = not_df['Name'].apply(lambda x: f'[[{x}]]')
+        mdfile.new_checkbox_list(not_df['Md_Name'])
+        
+        #Updated
+        mdfile.write('\n## Updated\n')
+        update_df = self.local_data[self.local_data['Status'] == 'Updated'].copy()
+        update_df['Md_Name'] = update_df['Name'].apply(lambda x: f'[[{x}]]')
+        mdfile.new_checkbox_list(update_df['Md_Name'])
+        
+        #karban-setting
+        mdfile.new_paragraph("%% kanban:settings")
+        mdfile.write('\n```\n{"kanban-plugin":"basic"}\n```\n')
+        mdfile.write("%%")
+        mdfile.create_md_file()
 
 def main():
     gnd = BP_CVE_Notion()
@@ -139,8 +176,8 @@ def main():
     gnd.compare_notion()
     if gnd.compare_df is not None:
         gnd.change_notion_md()
-    
         gnd.save_local_data_df()
+    gnd.update_result()
     return
 
 
