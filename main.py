@@ -98,20 +98,32 @@ class BP_CVE_Notion:
         df['EndDate'] = df['properties'].apply(lambda x: x['날짜']['date']['end'])
         
         df = df.sort_values('Name').reset_index(drop=True)[['Name', 'id', 'Status','StartDate', 'EndDate']]
+        df['Content'] = df['id'].apply(lambda x: self.del_img(StringExporter(block_id=x, download=False).export()))
         self.notion_data = df.copy()
         return
+    
+    def del_img(self, content):
+        content_list = content.splitlines()
+        return_string = ""
+        for string in content_list:
+            if "![" not in string:
+                return_string += string+'\n'
+        return return_string
     
     def compare_notion(self):
         if self.local_data is not None:
             if not self.local_data.equals(self.notion_data):
                 print('Update Local Data')
-                merge_df = pd.merge(self.notion_data, self.local_data, how='outer', on=['Name','id'])
-                compare_df = merge_df[merge_df['Status_x'] != merge_df['Status_y']]
-                compare_df = compare_df[['Name','id', 'Status_x', 'StartDate_x', 'EndDate_x']].rename(columns={'Status_x':'Status', 'StartDate_x':'StartDate', 'EndDate_x':'EndDate'}).dropna(axis=0)
+                merge_df = pd.merge(self.notion_data, self.local_data, how='outer', on=['Name','id']).drop_duplicates(['Name'])
+                compare_df = merge_df.loc[(merge_df['Status_x'] != merge_df['Status_y']) | (merge_df['Content_x'] != merge_df['Content_y']),]
+                print(compare_df)
+                compare_df['Change'] = compare_df.apply(lambda row: 'Status' if row['Status_x'] != row['Status_y'] else 'Content',axis=1)
+                print(compare_df[['Name', 'id', 'Status_x', 'Status_y', 'Content_x', 'Content_y', 'Change']])
+                compare_df = compare_df[['Name','id', 'Status_x', 'StartDate_x', 'EndDate_x', 'Content_x', 'Change']].rename(columns={'Status_x':'Status', 'StartDate_x':'StartDate', 'EndDate_x':'EndDate', 'Content_x':'Content'}).dropna(axis=0)
                 if compare_df is not None:
                     self.local_data = pd.concat([self.local_data, compare_df], axis=0, join='outer')
                     self.compare_df = compare_df.copy()
-                print(compare_df)
+                
             else :
                 print('Not Update Local Data')
         else:
