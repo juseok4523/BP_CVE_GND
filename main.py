@@ -110,20 +110,33 @@ class BP_CVE_Notion:
                 return_string += string+'\n'
         return return_string
     
+    def create_change_status(self, row):
+        if row['Status_x'] != row['Status_x'] or row['Content_x'] != row['Content_x']:
+            return 'Delete'
+        elif row['Status_y'] != row['Status_y'] or row['Content_y'] != row['Content_y']:
+            return 'Add'
+        elif row['Status_x'] != row['Status_y']:
+            return 'Status'
+        elif row['Content_x'] != row['Content_y']:
+            return 'Content'
+        
+    def change_local_data(self, row):
+        if row['Change'] == 'Status' or row['Change'] == 'Content' or row['Change'] == 'Add':
+            self.local_data.loc[self.local_data['Name'] == row['Name']] = row.to_numpy()[:-1]
+
     def compare_notion(self):
         if self.local_data is not None:
             if not self.local_data.equals(self.notion_data):
                 print('Update Local Data')
                 merge_df = pd.merge(self.notion_data, self.local_data, how='outer', on=['Name','id']).drop_duplicates(['Name'])
-                compare_df = merge_df.loc[(merge_df['Status_x'] != merge_df['Status_y']) | (merge_df['Content_x'] != merge_df['Content_y']),]
-                print(compare_df)
-                compare_df['Change'] = compare_df.apply(lambda row: 'Status' if row['Status_x'] != row['Status_y'] else 'Content',axis=1)
-                print(compare_df[['Name', 'id', 'Status_x', 'Status_y', 'Content_x', 'Content_y', 'Change']])
-                compare_df = compare_df[['Name','id', 'Status_x', 'StartDate_x', 'EndDate_x', 'Content_x', 'Change']].rename(columns={'Status_x':'Status', 'StartDate_x':'StartDate', 'EndDate_x':'EndDate', 'Content_x':'Content'}).dropna(axis=0)
+                compare_df = merge_df.copy().loc[(merge_df['Status_x'] != merge_df['Status_y']) | (merge_df['Content_x'] != merge_df['Content_y']),:]
+                compare_df['Change'] = compare_df.copy().apply(self.create_change_status,axis=1)
+                compare_df = compare_df[['Name','id', 'Status_x', 'StartDate_x', 'EndDate_x', 'Content_x', 'Change']].rename(columns={'Status_x':'Status', 'StartDate_x':'StartDate', 'EndDate_x':'EndDate', 'Content_x':'Content'})
                 if compare_df is not None:
-                    self.local_data = pd.concat([self.local_data, compare_df], axis=0, join='outer')
-                    self.compare_df = compare_df.copy()
-                
+                    compare_df.apply(self.change_local_data, axis=1)
+                    print(self.local_data)
+                    #self.local_data = pd.concat([self.local_data, compare_df], axis=0, key='Name', join='outer')
+                    self.compare_df = compare_df[compare_df['Change'] == 'Add']
             else :
                 print('Not Update Local Data')
         else:
